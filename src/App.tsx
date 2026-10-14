@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { type FormEvent, type SyntheticEvent, useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight,
@@ -27,10 +27,12 @@ import crane7 from './assets/cranes/crane-7.jpeg';
 const BUSINESS_NAME = 'Mobile Crane Services';
 const WHATSAPP_NUMBER = '233248532224';
 const WHATSAPP_LOCAL = '0248532224';
+const WHATSAPP_DISPLAY = '+233 24 853 2224';
 
 const navItems = [
   { label: 'Home', href: '#home' },
   { label: 'Services', href: '#services' },
+  { label: 'Gallery', href: '#gallery' },
   { label: 'About Us', href: '#about' },
   { label: 'Why Choose Us', href: '#why-choose-us' },
   { label: 'Contact', href: '#contact' },
@@ -131,7 +133,67 @@ function App() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    service: services[0].title,
+    message: '',
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const reduceMotion = useReducedMotion();
+
+  const handleImageError = (event: SyntheticEvent<HTMLImageElement>) => {
+    const target = event.currentTarget;
+    if (target.dataset.fallbackApplied === 'true') {
+      return;
+    }
+    target.dataset.fallbackApplied = 'true';
+    target.src = crane1;
+    target.alt = 'Crane service fallback image';
+  };
+
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
+    setFormData((current) => ({ ...current, [field]: value }));
+    setFormErrors((current) => ({ ...current, [field]: '' }));
+  };
+
+  const validateForm = () => {
+    const nextErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      nextErrors.name = 'Please enter your name.';
+    }
+
+    if (!formData.phone.trim()) {
+      nextErrors.phone = 'Please enter a contact number.';
+    } else if (formData.phone.replace(/\D/g, '').length < 9) {
+      nextErrors.phone = 'Please enter a valid phone number.';
+    }
+
+    if (!formData.service.trim()) {
+      nextErrors.service = 'Please choose a service.';
+    }
+
+    if (!formData.message.trim()) {
+      nextErrors.message = 'Please tell us about your lifting requirement.';
+    } else if (formData.message.trim().length < 12) {
+      nextErrors.message = 'Please provide a few more details about the lifting requirement.';
+    }
+
+    setFormErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    const message = `Hello, my name is ${formData.name}. I need support for ${formData.service}. My contact number is ${formData.phone}. Project details: ${formData.message}`;
+    window.open(buildWhatsAppLink(message), '_blank', 'noopener,noreferrer');
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -229,6 +291,7 @@ function App() {
           <button
             type="button"
             aria-label="Toggle menu"
+            aria-expanded={mobileMenuOpen}
             className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-700 text-white lg:hidden"
             onClick={() => setMobileMenuOpen((open) => !open)}
           >
@@ -427,6 +490,7 @@ function App() {
                     alt={service.title}
                     loading="lazy"
                     decoding="async"
+                    onError={handleImageError}
                     className="h-64 w-full object-cover transition duration-500 group-hover:scale-105"
                   />
                   <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full bg-[#101C2C]/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#F5B82E] backdrop-blur-sm">
@@ -489,6 +553,7 @@ function App() {
                     alt={image.title}
                     loading="lazy"
                     decoding="async"
+                    onError={handleImageError}
                     className="h-80 w-full object-cover transition duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#101C2C]/90 via-[#101C2C]/15 to-transparent" />
@@ -556,6 +621,7 @@ function App() {
                   alt="Mobile crane working on a construction site"
                   loading="lazy"
                   decoding="async"
+                  onError={handleImageError}
                   className="h-[520px] w-full rounded-[1.5rem] object-cover"
                 />
                 <div className="absolute bottom-8 left-8 rounded-2xl bg-[#101C2C]/85 p-4 text-white backdrop-blur-sm">
@@ -674,6 +740,7 @@ function App() {
               alt="Crane operating at a construction site"
               loading="lazy"
               decoding="async"
+              onError={handleImageError}
               className="h-full w-full object-cover opacity-30"
             />
           </div>
@@ -742,7 +809,7 @@ function App() {
                   </div>
                   <div>
                     <p className="text-sm uppercase tracking-[0.2em] text-slate-500">WhatsApp</p>
-                    <p className="mt-1 text-lg font-bold text-[#101C2C]">{WHATSAPP_NUMBER}</p>
+                    <p className="mt-1 text-lg font-bold text-[#101C2C]">{WHATSAPP_DISPLAY}</p>
                   </div>
                 </a>
 
@@ -756,6 +823,77 @@ function App() {
                   </div>
                 </div>
               </div>
+
+              <form className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm" onSubmit={handleSubmit} noValidate>
+                <h3 className="font-display text-2xl font-bold text-[#101C2C]">Quick enquiry</h3>
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <div className="md:col-span-1">
+                    <label htmlFor="name" className="mb-2 block text-sm font-medium text-slate-700">Name</label>
+                    <input
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={(event) => handleInputChange('name', event.target.value)}
+                      className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-[#F5B82E] focus:ring-2 focus:ring-[#F5B82E]/20"
+                      placeholder="Your name"
+                    />
+                    {formErrors.name && <p className="mt-2 text-sm text-red-600">{formErrors.name}</p>}
+                  </div>
+
+                  <div className="md:col-span-1">
+                    <label htmlFor="phone" className="mb-2 block text-sm font-medium text-slate-700">Phone</label>
+                    <input
+                      id="phone"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={(event) => handleInputChange('phone', event.target.value)}
+                      className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-[#F5B82E] focus:ring-2 focus:ring-[#F5B82E]/20"
+                      placeholder="024 853 2224"
+                    />
+                    {formErrors.phone && <p className="mt-2 text-sm text-red-600">{formErrors.phone}</p>}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label htmlFor="service" className="mb-2 block text-sm font-medium text-slate-700">Service</label>
+                    <select
+                      id="service"
+                      name="service"
+                      value={formData.service}
+                      onChange={(event) => handleInputChange('service', event.target.value)}
+                      className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-[#F5B82E] focus:ring-2 focus:ring-[#F5B82E]/20"
+                    >
+                      {services.map((service) => (
+                        <option key={service.title} value={service.title}>
+                          {service.title}
+                        </option>
+                      ))}
+                    </select>
+                    {formErrors.service && <p className="mt-2 text-sm text-red-600">{formErrors.service}</p>}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label htmlFor="message" className="mb-2 block text-sm font-medium text-slate-700">Project details</label>
+                    <textarea
+                      id="message"
+                      name="message"
+                      rows={5}
+                      value={formData.message}
+                      onChange={(event) => handleInputChange('message', event.target.value)}
+                      className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-[#F5B82E] focus:ring-2 focus:ring-[#F5B82E]/20"
+                      placeholder="Tell us the lift location, required crane support, and timing."
+                    />
+                    {formErrors.message && <p className="mt-2 text-sm text-red-600">{formErrors.message}</p>}
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#F5B82E] px-5 py-3 text-sm font-bold text-[#101C2C] transition hover:bg-[#f7c855] focus:outline-none focus:ring-2 focus:ring-[#F5B82E] focus:ring-offset-2"
+                >
+                  Send enquiry via WhatsApp
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </form>
             </motion.div>
 
             <motion.div
@@ -770,6 +908,7 @@ function App() {
                 alt="Heavy equipment lifting at a site"
                 loading="lazy"
                 decoding="async"
+                onError={handleImageError}
                 className="h-full min-h-[480px] w-full rounded-[1.5rem] object-cover"
               />
             </motion.div>
